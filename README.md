@@ -20,7 +20,12 @@ Training the local AI model
 The full jupyter notebook for the AI model can be found in the models folder in this repository
 
 
+
+The full jupyter notebook taken from watsonx.ai(from the asset "Work with data and models in Python or R notebooks for the AI model") can be found in the model folder in this repository
+
+
 (New transaction data is sent to the Watsonx server that contains a model of the above random forest machine learning. From there, the model detects whether or not the new transaction should be flagged and the bank information is updated accordingly.)
+
 
 
 
