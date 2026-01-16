@@ -2,5 +2,8 @@ Sentinel AI is your personal financial assistant, powered by IBM watsonx.ai, mon
 
 
 Here is how we used to build it:
+
+To train our chat assistant:
 <img width="1470" height="835" alt="Screenshot 2026-01-16 at 2 52 37 PM" src="https://github.com/user-attachments/assets/3cbbd0b8-a89b-4fb9-8c5d-c46b06e9bfe0" />
+
 
