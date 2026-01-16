@@ -18,5 +18,6 @@ Training the local AI model
 
 
 
+New transaction data is sent to the Watsonx server that contains a model of the above random forest machine learning. From there, the model detects whether or not the new transaction should be flagged and the bank information is updated accordingly.
 
 
