@@ -12,13 +12,13 @@ class PatternDetector:
         print(f"Loading base model: {self.base_model_id}")
         self.tokenizer = AutoTokenizer.from_pretrained(self.base_model_id)
         
-        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        device = "cpu"
         print(f"Using device: {device}")
         
         self.base_model = AutoModelForCausalLM.from_pretrained(
             self.base_model_id,
             device_map=device,
-            torch_dtype=torch.float16 if device == "mps" else torch.float32
+            torch_dtype=torch.float32
         )
         
         if os.path.exists(self.adapter_path):

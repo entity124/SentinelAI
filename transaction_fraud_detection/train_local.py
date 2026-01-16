@@ -15,8 +15,8 @@ from peft import LoraConfig, get_peft_model, TaskType
 # Granite 3.1 MoE (3B params, 800M active)
 MODEL_NAME = "ibm-granite/granite-3.1-3b-a800m-instruct"
 OUTPUT_DIR = "predatory-patterns-lora"
-TRAIN_FILE = "train.jsonl"
-NUM_EPOCHS = 3
+TRAIN_FILE = "train_micro.jsonl"
+NUM_EPOCHS = 1
 BATCH_SIZE = 1 # Small batch size for Mac memory safety
 
 def format_instruction(sample):
@@ -83,13 +83,13 @@ CONTEXT:
     tokenized_datasets = raw_dataset.map(preprocess_batched, batched=True)
     
     print("Loading Model (This may take a while)...")
-    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    device = "cpu"
     print(f"Using device: {device}")
     
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME, 
         device_map=device,
-        torch_dtype=torch.float16 if device == "mps" else torch.float32
+        torch_dtype=torch.float32
     )
     
     # Configure LoRA
