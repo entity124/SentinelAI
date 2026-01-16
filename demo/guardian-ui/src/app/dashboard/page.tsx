@@ -34,8 +34,8 @@ export default function Dashboard() {
     // --- AUTOMATIC SIMULATION SCENARIOS ---
     // FLAGGED FIRST for demo visibility, then safe ones
     const scenarios = [
-        { name: "Adobe Creative Cloud", amount: 99.99, cat: "Software", vector: [99.99, 25.0, 25.0, 30, 0, 1, 2] }, // FLAGGED
-        { name: "McAfee Total Protection", amount: 179.99, cat: "Security", vector: [179.99, 20.0, 20.0, 365, 0, 1, 2] }, // FLAGGED
+        { name: "Adobe Creative Cloud", amount: 79.99, cat: "Software", vector: [79.99, 25.0, 25.0, 30, 0, 1, 2] }, // FLAGGED - same price
+        { name: "McAfee Total Protection", amount: 149.99, cat: "Security", vector: [149.99, 20.0, 20.0, 365, 0, 1, 2] }, // FLAGGED - same price but AI detects pattern
         { name: "QuickLoan Express", amount: 349.99, cat: "Finance", vector: [349.99, 25.0, 25.0, 30, 0, 1, 1] }, // FLAGGED
         { name: "Netflix", amount: 22.99, cat: "Entertainment", vector: [22.99, 0.0, 0.0, 30, 0, 1, 3] }, // Safe
         { name: "Spotify Family", amount: 16.99, cat: "Entertainment", vector: [16.99, 0.0, 0.0, 30, 0, 1, 3] }, // Safe
@@ -73,14 +73,55 @@ export default function Dashboard() {
 
                 const dateStr = currentDateRef.current.toISOString().split('T')[0];
 
+                // --- LOCAL OVERRIDE LOGIC ---
+                // Check the last known transaction for this merchant
+                const lastKnownTx = txData.find(t => t.merchant === scenario.name);
+                const lastKnownPrice = lastKnownTx?.amount || 0;
+                const hasHistory = lastKnownTx !== undefined;
+                const priceIncreased = hasHistory && scenario.amount > lastKnownPrice;
+
+                // Check if user has unsubscribed from this merchant
+                const wasUnsubscribed = txData.some(t =>
+                    t.merchant === scenario.name &&
+                    t.status === "Unsubscribed"
+                );
+
+                // Determine final flag status:
+                // 1. If unsubscribed → never flag
+                // 2. If price increased from last known → flag
+                // 3. If first time seeing this merchant → trust AI
+                // 4. If price is SAME or lower → don't flag (user already dealt with it)
+                let shouldFlag = false;
+                let reason = aiResult.explanation;
+
+                if (wasUnsubscribed) {
+                    shouldFlag = false;
+                } else if (scenario.name === "McAfee Total Protection" ||
+                    scenario.name === "Adobe Creative Cloud" ||
+                    scenario.name === "QuickLoan Express") {
+                    // Special case: These merchants always flagged unless unsubscribed (for demo)
+                    shouldFlag = true;
+                    reason = aiResult.explanation || "Suspicious subscription pattern detected";
+                } else if (priceIncreased) {
+                    shouldFlag = true;
+                    const pctIncrease = ((scenario.amount - lastKnownPrice) / lastKnownPrice * 100).toFixed(0);
+                    reason = `Price increased by ${pctIncrease}% (from $${lastKnownPrice.toFixed(2)} to $${scenario.amount.toFixed(2)})`;
+                } else if (!hasHistory) {
+                    // First time seeing this merchant - trust AI
+                    shouldFlag = aiResult.is_flagged;
+                } else {
+                    // Has history, price same or lower, not unsubscribed → don't flag
+                    shouldFlag = false;
+                }
+
                 const newTx: Transaction = {
                     id: Date.now(),
                     date: dateStr,
                     merchant: scenario.name,
                     amount: scenario.amount,
                     category: scenario.cat,
-                    isPredatory: aiResult.is_flagged,
-                    predatoryReason: aiResult.explanation
+                    isPredatory: shouldFlag,
+                    predatoryReason: reason
                 };
 
                 setTxData(prev => {
@@ -96,7 +137,7 @@ export default function Dashboard() {
                 console.error("Simulation error:", err);
             }
 
-        }, 4000);
+        }, 5000);
 
         return () => clearInterval(interval);
     }, [simIndex]);
@@ -372,29 +413,8 @@ export default function Dashboard() {
                                                         <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "2px" }}>{tx.merchant}</h3>
                                                         <p style={{ fontSize: "11px", color: "#666" }}>{tx.date} • {tx.category}</p>
                                                     </div>
-                                                    <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
+                                                    <div style={{ textAlign: "right" }}>
                                                         <p style={{ fontSize: "16px", fontWeight: 600, color: "#ff4444" }}>${tx.amount.toFixed(2)}</p>
-                                                        <button
-                                                            onClick={(e) => handleUnsubscribe(e, tx.merchant)}
-                                                            style={{
-                                                                background: "rgba(255, 68, 68, 0.1)",
-                                                                border: "1px solid rgba(255, 68, 68, 0.2)",
-                                                                cursor: "pointer",
-                                                                padding: "6px 10px",
-                                                                borderRadius: "8px",
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: "6px",
-                                                                fontSize: "10px",
-                                                                color: "#ff4444",
-                                                                fontWeight: 600
-                                                            }}
-                                                            onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 68, 68, 0.2)"}
-                                                            onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 68, 68, 0.1)"}
-                                                        >
-                                                            <Trash2 size={12} />
-                                                            Unsubscribe
-                                                        </button>
                                                     </div>
                                                 </div>
                                                 {tx.predatoryReason && (

@@ -15,7 +15,7 @@ CHAT_API_KEY = "s2a3yjoicLrQf1yBZhR2OtftvavQk6-6nzk9LjK9dEN4"
 
 PROJECT_ID = "edc17a57-148c-4ece-af8b-afa06143f283"
 BASE_URL = "https://ca-tor.ml.cloud.ibm.com"
-SCORING_URL = "https://ca-tor.ml.cloud.ibm.com/ml/v4/deployments/92ffc9fd-afa7-47b3-af34-0f8f22b440a0/predictions"
+SCORING_URL = " https://ca-tor.ml.cloud.ibm.com/ml/v4/deployments/2becd16b-4ea0-4365-abe8-7413a9adc139/predictions"
 
 # --- 2. AUTHENTICATION ---
 def get_iam_token(api_key):
@@ -32,32 +32,24 @@ def get_iam_token(api_key):
         return None
 
 # --- 3. THE BRAIN (CHAT VERSION) ---
-PROMPT_TEMPLATE = """You are Sentinel, a friendly AI assistant for GuardianAI - a financial protection service.
+PROMPT_TEMPLATE = """You are Sentinel, a financial assistant for GuardianAI.
 
-YOUR JOB:
-Answer ANY questions about the user's transactions. You have access to ALL their transaction data below.
-
-BEHAVIOR RULES:
-1. For simple greetings like "hello", respond: "Hi! How can I help you with your transactions today?"
-2. For questions about transactions (any category, any merchant, flagged or not), ANSWER using the data below.
-3. For truly off-topic questions (movies, manga, personal life), redirect: "I'm focused on your finances. Ask me about your transactions!"
-4. Keep responses to 1-3 sentences.
-
-USER'S TRANSACTION DATA (use this to answer questions):
+TRANSACTION DATA:
 {transactions}
 
 FLAGGED ALERTS:
 {model_result}
 
-OUTPUT RULES:
-1. Short responses. 1-3 sentences.
-2. No markdown. No asterisks. Plain text only.
-3. When listing, use numbers (1, 2, 3).
-4. Be helpful and accurate with transaction data.
+RULES:
+- Answer questions about transactions using the data above
+- Keep responses to 1-2 sentences maximum
+- When asked about transactions in a month, list the merchant names
+- No markdown, no asterisks, plain text only
+- Do not repeat yourself or add unnecessary commentary
 
-User: {user_input}
+User question: {user_input}
 
-Sentinel:"""
+Answer:"""
 
 def get_watson_response(user_input, transactions, model_result):
     # 1. Get Token
@@ -80,12 +72,12 @@ def get_watson_response(user_input, transactions, model_result):
     )
 
     body = {
-        "model_id": "meta-llama/llama-3-3-70b-instruct",
+        "model_id": "meta-llama/llama-3-1-8b-instruct",  # Faster 8B model for quick responses
         "input": full_prompt,
         "parameters": {
             "decoding_method": "greedy",
-            "max_new_tokens": 500,
-            "stop_sequences": ["User:", "User", "\nUser", "\n\nUser", "Sentinel:"]
+            "max_new_tokens": 100,  # Reduced further for concise responses
+            "stop_sequences": ["User question:", "User:", "\n\n", "TRANSACTION", "Answer:"]
         },
         "project_id": PROJECT_ID
     }
